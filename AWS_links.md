@@ -1,3 +1,4 @@
+- [monthly cost calculator](http://calculator.s3.amazonaws.com/index.html)
 - [instance types](https://aws.amazon.com/ec2/instance-types/)
 - [instance pricing](https://aws.amazon.com/ec2/pricing/)
 - [storage pricing](https://aws.amazon.com/ebs/pricing/)
