@@ -6,6 +6,6 @@ There is a [Youtube playlist](https://www.youtube.com/watch?v=Z7RCnzSkNcQ&list=P
 The tentative schedule for future meetings is
 
 - 9/24 - AWS: spot instances and machine images (Will)
-- 10/1 - AWS CodeDeploy (Xin)
-- 10/8 - a "case study" in managing price in cloud computing (Xin)
+- 10/1 - a "case study" in managing price in cloud computing (Xin)
+- 10/8 - AWS CodeDeploy (Xin)
 - 10/15 - cloud computing finances in grants, etc. (Jarad)
