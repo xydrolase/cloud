@@ -1,0 +1,260 @@
+\documentclass[10pt]{beamer} 
+
+\usefonttheme{serif}
+
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{verbatim}
+
+\renewcommand\rmdefault{pplx}
+\renewcommand\mathfamilydefault{cmr}
+
+\title{A tutorial on AWS CodeDeploy}
+\author{\underline{Xin Yin}}
+\date{\scriptsize 10/14/2015\\
+Cloud Computing Working Group}
+
+\begin{document}
+
+\frame{\titlepage}
+
+%\section{CodeDeploy in a nutshell}
+\begin{frame}
+    \frametitle{CodeDeploy - Examples}
+    \begin{enumerate}
+        \item Alice runs a few Shiny servers on multiple EC2 instances. Now that Alice wants to deploy a new version of her Shiny application to all servers.
+        \item Bob wants to run some bioinformatics tools on multiple EC2 instances to crunch his sequencing data in parallel. To do so, he needs to install some packages and software.
+        \item Charlie uses multiple EC2 instances to run his simulations. He made some changes to his R code and wants to upload and rerun the analysis with the updated R program.
+        \item Daniel sporadically uses spot instances for computing, and he wants to automate the process of installing R, R packages and upload his R program to newly launched instances.
+    \end{enumerate}
+
+    \vspace{0.5in}
+    \pause
+    {\bf NOTE}: the solutions are not {\bf unique} (AMIs, Docker, {\tt rsync}, {\tt scp}, Git-Hooks, {\tt user-data}).
+\end{frame}
+
+\begin{frame}
+    \frametitle{CodeDeploy in a nutshell}
+    
+    \includegraphics[width=\textwidth]{architecture.png}
+
+    {\tiny \url{http://docs.aws.amazon.com/codedeploy/latest/userguide/welcome.html}}
+\end{frame}
+
+\begin{frame}
+    \frametitle{CodeDeploy - Terminology}
+    \begin{itemize}
+        \item Application: 
+
+            ``{\it An application in AWS CodeDeploy is simply a unique identifier used by AWS CodeDeploy to deploy the correct revision to the correct set of instances with the correct deployment configuration.}''
+        \item Deployment Group: 
+
+            A deployment group specify a set of instances to which a {\bf revision} of your application/code is deployed, according to deployment configurations.
+        \item Revision:
+
+            A {\bf snapshot} of your code-repository/application at a certain version.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{CodeDeploy - A quick tutorial}
+    \framesubtitle{0. Steps}
+    \begin{enumerate}
+        \item Create IAM {\bf Roles} and {\bf Policies}
+        \item Launch and configure your EC2 instances
+        \item Create an {\bf Application} and {\bf Deployment Group}
+        \item Prepare a {\bf Revision}
+        \item Deploy!
+    \end{enumerate}
+
+    {\tiny You can also check out AWS's tutorial: \url{http://docs.aws.amazon.com/codedeploy/latest/userguide/getting-started-walkthrough.html}}
+\end{frame}
+
+\begin{frame}
+    \frametitle{CodeDeploy - A quick tutorial}
+    \framesubtitle{1. Configure IAM Roles and Policies}
+
+    \begin{itemize}
+        \item Our goal is to create {\bf two roles}, each attached with certain {\bf policies} (permitting some actions to be performed).
+        \item Roles can be {\it assumed} by certain services ({\it e.g.} EC2, CodeDeploy). 
+            By assuming the role, the service gains the attached {\bf policies}.
+            \begin{itemize}
+                \item {\it CodeDeploy} assumes some role to interact with the instances.
+                \item Your {\it EC2 instances} assumes some other role to interact with {\it AWS S3}.
+            \end{itemize}
+        \pause
+        \item Live Demo
+    \end{itemize}
+    {\tiny Reference: \url{http://docs.aws.amazon.com/codedeploy/latest/userguide/how-to-create-service-role.html}}
+\end{frame}
+
+\begin{frame}
+    \frametitle{CodeDeploy - A quick tutorial}
+    \framesubtitle{2. Launch EC2 Instances and Tag Them}
+    \begin{itemize}
+        \item Your code will be deployed to EC2 instances (on-demand, spot, reserved) launched in specific region(s).
+        \item To let CodeDeploy discover your EC2 instances, {\bf tag them}.
+            \begin{itemize}
+                \item You can attach up to 10 tags to an instance.
+                \item Tags are simply {\it key-value} pairs, {\it e.g.} {\tt deploy-r=true, app=shinydemo}.
+                \item If you launch spot instances using the AWS Console, you {\bf must} tag instances after your requests are fulfilled.
+            \end{itemize}
+        \item Utilize the {\it user-data} of your EC2 instance to install CodeDeploy agent on the newly launched instances automatically.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{CodeDeploy - A quick tutorial}
+    \framesubtitle{3. Create an Application and Deployment Group}
+    \begin{itemize}
+        \item Don't confuse the ``{\it application}'' here with your actual ``program'' or ``code-repository''. Here, ``application'' merely refers to a unique identifier in the CodeDeploy service.
+        \item Deployment group uses {\bf tags} to identify a group of instances to which your program is deployed.
+        \pause
+        \item Live Demo
+    \end{itemize}
+    
+    {\tiny Reference: \url{http://docs.aws.amazon.com/codedeploy/latest/userguide/how-to-create-application.html}}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{CodeDeploy - A quick tutorial}
+    \framesubtitle{4. Prepare a Revision}
+    \begin{itemize}
+        \item A {\bf revision} refers to the collection of:
+            \begin{enumerate}
+                \item {\color{red} Your program (source code, executables, supporting libraries, configurations)}
+                \item {\color{magenta} Deployment scripts/hooks}
+                \item {\color{cyan} \tt appspec.yml}
+            \end{enumerate}
+        \item To prepare a revision, arrange files in a directory like this:
+    \end{itemize}
+    {\small
+\begin{verbatim}
+/home/alice/
+\end{verbatim}
+}
+\vspace{-0.1in}
+{\color{red}\small
+\begin{verbatim}
+  |--shinydemo
+  |    |--server.R
+  |    |--ui.R
+  |    |--README.md
+  |    |--static
+  |    |     |--foo.js
+\end{verbatim}
+}
+\vspace{-0.1in}
+{\color{magenta}\small
+\begin{verbatim}
+  |--scripts 
+  |    |--before_install.sh
+  |    |--after_install.sh
+\end{verbatim}
+}
+\vspace{-0.1in}
+{\color{cyan}\small
+\begin{verbatim}
+  |--appspec.yml
+\end{verbatim}
+}
+
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{CodeDeploy - A quick tutorial}
+    \framesubtitle{4. Prepare a Revision (appspec.yml)}
+    \vspace{-0.07in}
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+            \begin{itemize}
+                \item {\tt os}: {\tt linux} or {\tt windows}
+                \item {\tt files}: a {\it mapping} to tell CodeDeploy agent, {\bf which files} to copy, and {\bf to where}
+                \item {\tt permissions}: {\bf who} should own the files? what are the permissions?
+                \item {\tt hooks}: what scripts should the CodeDeploy agent execute during the deployment
+            \end{itemize}
+
+        \end{column}
+        \begin{column}{0.6\textwidth}
+            {\footnotesize
+            \begin{verbatim}
+version: 0.0
+os: linux
+
+files:
+ - source: shinydemo
+   destination: /home/ubuntu
+
+permissions:
+  - object: shinydemo
+    pattern: "**"
+    owner: ubuntu
+    mode: 644
+
+hooks:
+  BeforeInstall:
+    - location: scripts/install_R.sh
+      timeout: 180
+  ApplicationStart:
+    - location: scripts/run_shiny_server.sh
+      timeout: 60
+      runas: ubuntu
+            \end{verbatim}
+}
+        \end{column}
+    \end{columns}
+
+    {\tiny YAML Syntax: \url{http://learn.getgrav.org/advanced/yaml}}\\
+    {\tiny appspec.yml reference: \url{http://docs.aws.amazon.com/codedeploy/latest/userguide/app-spec-ref.html}}
+\end{frame}
+
+\begin{frame}
+    \frametitle{CodeDeploy - A quick tutorial}
+    \framesubtitle{4. Prepare a Revision (continued)}
+
+    \begin{columns}
+        \begin{column}{0.4\textwidth}
+    \begin{itemize}
+        \item {\bf Hooks} section defines scripts that will be executed during various lifecycle of a deployment process.
+        \item You can hook up scripts with only the yellow events. 
+        \item Using scripts can customize your deployment with a lot of flexibility.
+    \end{itemize}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+    \includegraphics[width=\textwidth]{app_hooks.png}
+    \end{column}
+    \end{columns}
+
+    \vspace{0.1in}
+    \pause
+    Live Demo
+
+    \vspace{0.1in}
+    {\tiny \url{http://docs.aws.amazon.com/codedeploy/latest/userguide/app-spec-ref.html\#app-spec-ref-hooks}}
+\end{frame}
+
+\begin{frame}
+    \frametitle{CodeDeploy - A quick tutorial}
+    \framesubtitle{5. Deploy and Monitor the Deploying Process}
+    \begin{itemize}
+        \item To deploy the prepared revision, we can put the directory into a {\tt .zip} or {\tt .tar.gz} archive.
+        \item Upload the archive to AWS S3 or GitHub.
+        \item Deploy it!
+        \pause
+        \item Live Demo
+    \end{itemize}
+
+    {\tiny To see how to deploy your code on GitHub, please refer to \url{http://docs.aws.amazon.com/codedeploy/latest/userguide/how-to-deploy-revision.html}}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Deploy the same program, but run with different parameters?}
+    \begin{itemize}
+        \item Use instance meta-data.
+        \item Use instance tags and {\tt ec2-describe-tags}.
+    \end{itemize}
+\end{frame}
+
+\end{document}

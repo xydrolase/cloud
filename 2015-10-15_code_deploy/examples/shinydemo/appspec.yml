@@ -1,0 +1,33 @@
+# version must be '0.0'
+version: 0.0
+
+os: linux
+
+# copy the examples into /home/ubuntu.
+# make sure that you launch your EC2 instance with Ubuntu 14.04 AMIs
+files:
+  - source: src
+    destination: /home/ubuntu/shinydemo
+
+# let user 'ubuntu' to own all the source files
+permissions:
+  - object: /home/ubuntu/shinydemo
+    pattern: "**"
+    owner: ubuntu
+    mode: 777
+
+# before install the shiny application, make sure R is installed, and
+# the required packages are downloaded as well.
+hooks:
+  BeforeInstall:
+    - location: scripts/install_R.sh
+      runas: root
+      timeout: 180
+  AfterInstall:
+    - location: scripts/install_pkgs.sh
+      runas: ubuntu
+      timeout: 300
+  ApplicationStart:
+    - location: scripts/run_shiny_demo.sh
+      runas: ubuntu
+      timeout: 60
