@@ -1,0 +1,168 @@
+\documentclass[10pt]{beamer} 
+
+\usefonttheme{serif}
+
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{verbatim}
+
+\renewcommand\rmdefault{pplx}
+\renewcommand\mathfamilydefault{cmr}
+
+\title{AWS: IAM, S3, Spot Instances and more}
+\author{\underline{Xin Yin}}
+\date{\scriptsize 10/01/2015\\
+Cloud Computing Working Group}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\section{IAM - Identity and Access Management}
+\begin{frame}
+    \frametitle{IAM - Identity and Access Management}
+\end{frame}
+
+\section{Storage of your data}
+\begin{frame}
+    \frametitle{Data Storage - Your options}
+    \begin{itemize}
+        \item EBS - Elastic Block Store 
+            \begin{itemize}
+                \item {\color{green} Good:} can mounted as a block device to EC2 instances.
+                \item {\color{green} Good:} provides file system.
+                \item {\color{red} Bad:} can only be mounted to one instance.
+                \item {\color{red} Bad:} charged at provisioned volume.
+            \end{itemize}
+        \item S3 - Simple Storage Service 
+            \begin{itemize}
+                \item {\color{green} Good:} {\it Simple} and versatile
+                \item {\color{green} Good:} more reliable (than EBS)
+                \item {\color{green} Good:} cheaper (than EBS)\\ {\it $\$ 0.03$/GiB~ vs. $~\$ 0.10$/GiB (provisioned)}
+                \item {\color{green} Good:} supports versioning
+                \item {\color{green} Good:} files can be made publicly available 
+                \item {\color{red} Bad:} not a file system 
+            \end{itemize}
+    \end{itemize}
+\end{frame}
+\subsection{EBS - Elastic Block Store}
+
+\begin{frame}
+    \frametitle{S3 - Simple Storage Service}
+    \begin{itemize}
+        \item live demo
+    \end{itemize}
+\end{frame}
+
+\section{EC2 (Spot) Instances}
+\begin{frame}
+    \frametitle{Calculate the costs of your spot instances}
+    \begin{itemize}
+        \item EC2 Instances: price varies by instance type
+        \item S3 Storage: 
+            \begin{itemize}
+                \item Volume: {\color{blue} $\$$ 0.03 / GiB $\times$ month}
+                \item Requests: {\color{blue} $\sim$ $\$$ 0.005 / 1000 Reqs}
+            \end{itemize}
+        \item Data transfer: 
+            \begin{itemize}
+                \item Inbound: {\it free}
+                \item Outbound (EC2/S3 to the Internet): {\color{blue} \it $\$$ 0.09 / GiB}
+                \item Between AWS Regions: {\color{blue} \it $\$$ 0.02 / GiB}
+            \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{How to reduce costs?}
+    \begin{enumerate}
+        \item Determine the most suitable instance types
+        \item Minimize/eliminate cross-regional data transmission
+        \item Maximize the utilization of computational resources
+        \item Protect yourself from data loss due to instance termination
+    \end{enumerate}
+\end{frame}
+
+
+\begin{frame}[fragile]
+    \frametitle{What is the best instance type for me?}
+    \begin{itemize}
+        \item Determing the limiting factor of your program:
+            \begin{itemize}
+                \item CPU: {\it simulations}
+                \item Memory: {\it bioinformatics}
+                \item Storage: {\it big datasets}
+            \end{itemize}
+        \item {\tt time}
+            {\scriptsize
+                \begin{verbatim}
+alias timem="/usr/bin/time -f 'real \%e\nuser \%U\nsys \%S\nmem \%M Kb'"
+                \end{verbatim}
+            }
+
+            \begin{verbatim}
+    timem <some_program>
+    real 18390.10
+    user 128669.82
+    sys 2318.05
+    mem 45031068 Kbytes 
+            \end{verbatim}
+            \begin{itemize}
+                \item $(128669.82 + 2318.05) / 18390.10 = 7.13  \approx\text{(8 cores)}$
+                \item $45031068 / 1024 / 1024 = 42.94 \text{(GiB)}$
+            \end{itemize}
+        \pause
+        \item How many GBs of memory per core?
+        \item \url{https://aws.amazon.com/ec2/instance-types/}
+
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Minimize cross-regional data transmission}
+    \begin{itemize}
+        \item Launch EC2 instances in the same region of your S3 buckets
+            \begin{itemize}
+                \item No {\it \$ 0.02 / GiB} cost for data transfer
+                \item Low-latency, high-throughput
+            \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Maximize the utilization of computational resources}
+    \begin{itemize}
+        \item CPUs, are they 100\% utilized? 
+        \item Reduce the amount of time on setups:
+            \begin{itemize}
+                \item Use {\it user data}
+                \item Launch instance from your AMI
+                \item Use {\bf CodeDeploy}
+            \end{itemize}
+        \item Load balancing: 
+        \item Automation and monitoring:
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Inevitable price fluctutation}
+    \begin{itemize}
+        \item Study the pricing history (and predict the variation)
+        \item Don't be intimidated to bid {\bf higher}
+            \begin{itemize}
+                \item You are only charged for the {\it current price}, not your {\it maximum bid price}.
+                \item Protect you from price surges and spikes.
+            \end{itemize}
+        \item If possible, divide your program into small segments:
+            \begin{itemize}
+                \item Example: simulations, MCMC
+                \item After each segment, backup the results to S3
+            \end{itemize}
+        \item Termination Notices:
+            \\
+            \url{http://169.254.169.254/latest/meta-data/spot/termination-time}
+    \end{itemize}
+\end{frame}
+
+\end{document}
