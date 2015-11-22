@@ -12,9 +12,13 @@ files:
 # let user 'ubuntu' to own all the source files
 permissions:
   - object: /home/ubuntu/shinydemo
-    pattern: "**"
+    pattern: "*.R"
     owner: ubuntu
-    mode: 777
+    mode: 664
+  # make sure that the directory can be "setwd" into.
+  - object: /home/ubuntu/shinydemo/050-kmeans-example
+    owner: ubuntu
+    mode: 774
 
 # before install the shiny application, make sure R is installed, and
 # the required packages are downloaded as well.
