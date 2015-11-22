@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export R_LIBS_USER=
-
 cd /home/ubuntu/shinydemo
 
 # run the Shiny application in the background, so that this script
